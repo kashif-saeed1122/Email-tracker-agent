@@ -1,0 +1,147 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	intent_classifier(intent_classifier)
+	planner(planner)
+	response_generator(response_generator)
+	error_handler(error_handler)
+	email_scanner(email_scanner)
+	pdf_processor(pdf_processor)
+	data_extractor(data_extractor)
+	database_saver(database_saver)
+	database_query(database_query)
+	rag_indexer(rag_indexer)
+	rag_retriever(rag_retriever)
+	web_searcher(web_searcher)
+	reminder_creator(reminder_creator)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> intent_classifier;
+	data_extractor -. &nbsp;end&nbsp; .-> __end__;
+	data_extractor -.-> database_query;
+	data_extractor -.-> database_saver;
+	data_extractor -.-> email_scanner;
+	data_extractor -.-> error_handler;
+	data_extractor -.-> pdf_processor;
+	data_extractor -.-> rag_indexer;
+	data_extractor -.-> rag_retriever;
+	data_extractor -.-> reminder_creator;
+	data_extractor -.-> response_generator;
+	data_extractor -.-> web_searcher;
+	database_query -. &nbsp;end&nbsp; .-> __end__;
+	database_query -.-> data_extractor;
+	database_query -.-> database_saver;
+	database_query -.-> email_scanner;
+	database_query -.-> error_handler;
+	database_query -.-> pdf_processor;
+	database_query -.-> rag_indexer;
+	database_query -.-> rag_retriever;
+	database_query -.-> reminder_creator;
+	database_query -.-> response_generator;
+	database_query -.-> web_searcher;
+	database_saver -. &nbsp;end&nbsp; .-> __end__;
+	database_saver -.-> data_extractor;
+	database_saver -.-> database_query;
+	database_saver -.-> email_scanner;
+	database_saver -.-> error_handler;
+	database_saver -.-> pdf_processor;
+	database_saver -.-> rag_indexer;
+	database_saver -.-> rag_retriever;
+	database_saver -.-> reminder_creator;
+	database_saver -.-> response_generator;
+	database_saver -.-> web_searcher;
+	email_scanner -. &nbsp;end&nbsp; .-> __end__;
+	email_scanner -.-> data_extractor;
+	email_scanner -.-> database_query;
+	email_scanner -.-> database_saver;
+	email_scanner -.-> error_handler;
+	email_scanner -.-> pdf_processor;
+	email_scanner -.-> rag_indexer;
+	email_scanner -.-> rag_retriever;
+	email_scanner -.-> reminder_creator;
+	email_scanner -.-> response_generator;
+	email_scanner -.-> web_searcher;
+	intent_classifier -.-> error_handler;
+	intent_classifier -.-> planner;
+	pdf_processor -. &nbsp;end&nbsp; .-> __end__;
+	pdf_processor -.-> data_extractor;
+	pdf_processor -.-> database_query;
+	pdf_processor -.-> database_saver;
+	pdf_processor -.-> email_scanner;
+	pdf_processor -.-> error_handler;
+	pdf_processor -.-> rag_indexer;
+	pdf_processor -.-> rag_retriever;
+	pdf_processor -.-> reminder_creator;
+	pdf_processor -.-> response_generator;
+	pdf_processor -.-> web_searcher;
+	planner -.-> data_extractor;
+	planner -.-> database_query;
+	planner -.-> database_saver;
+	planner -.-> email_scanner;
+	planner -.-> pdf_processor;
+	planner -.-> rag_indexer;
+	planner -.-> rag_retriever;
+	planner -.-> reminder_creator;
+	planner -.-> response_generator;
+	planner -.-> web_searcher;
+	rag_indexer -. &nbsp;end&nbsp; .-> __end__;
+	rag_indexer -.-> data_extractor;
+	rag_indexer -.-> database_query;
+	rag_indexer -.-> database_saver;
+	rag_indexer -.-> email_scanner;
+	rag_indexer -.-> error_handler;
+	rag_indexer -.-> pdf_processor;
+	rag_indexer -.-> rag_retriever;
+	rag_indexer -.-> reminder_creator;
+	rag_indexer -.-> response_generator;
+	rag_indexer -.-> web_searcher;
+	rag_retriever -. &nbsp;end&nbsp; .-> __end__;
+	rag_retriever -.-> data_extractor;
+	rag_retriever -.-> database_query;
+	rag_retriever -.-> database_saver;
+	rag_retriever -.-> email_scanner;
+	rag_retriever -.-> error_handler;
+	rag_retriever -.-> pdf_processor;
+	rag_retriever -.-> rag_indexer;
+	rag_retriever -.-> reminder_creator;
+	rag_retriever -.-> response_generator;
+	rag_retriever -.-> web_searcher;
+	reminder_creator -. &nbsp;end&nbsp; .-> __end__;
+	reminder_creator -.-> data_extractor;
+	reminder_creator -.-> database_query;
+	reminder_creator -.-> database_saver;
+	reminder_creator -.-> email_scanner;
+	reminder_creator -.-> error_handler;
+	reminder_creator -.-> pdf_processor;
+	reminder_creator -.-> rag_indexer;
+	reminder_creator -.-> rag_retriever;
+	reminder_creator -.-> response_generator;
+	reminder_creator -.-> web_searcher;
+	web_searcher -. &nbsp;end&nbsp; .-> __end__;
+	web_searcher -.-> data_extractor;
+	web_searcher -.-> database_query;
+	web_searcher -.-> database_saver;
+	web_searcher -.-> email_scanner;
+	web_searcher -.-> error_handler;
+	web_searcher -.-> pdf_processor;
+	web_searcher -.-> rag_indexer;
+	web_searcher -.-> rag_retriever;
+	web_searcher -.-> reminder_creator;
+	web_searcher -.-> response_generator;
+	error_handler --> __end__;
+	response_generator --> __end__;
+	data_extractor -.-> data_extractor;
+	database_query -.-> database_query;
+	database_saver -.-> database_saver;
+	email_scanner -.-> email_scanner;
+	pdf_processor -.-> pdf_processor;
+	rag_indexer -.-> rag_indexer;
+	rag_retriever -.-> rag_retriever;
+	reminder_creator -.-> reminder_creator;
+	web_searcher -.-> web_searcher;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

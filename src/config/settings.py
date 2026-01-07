@@ -9,9 +9,7 @@ class Settings:
     
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
     VOYAGE_API_KEY = os.getenv("VOYAGE_API_KEY", "")
-    
-    # Removed DATABASE_URL
-    
+        
     EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
     EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
     GMAIL_CREDENTIALS_PATH = os.getenv("GMAIL_CREDENTIALS_PATH", "credentials.json")
@@ -36,7 +34,7 @@ class Settings:
     EMBEDDING_MODEL = "voyage-3.5-lite"
 
     ENABLE_EMAIL_SCANNING = os.getenv("ENABLE_EMAIL_SCANNING", "true").lower() == "true"
-    ENABLE_RAG = True # Enforcing RAG
+    ENABLE_RAG = True
     ENABLE_REMINDERS = os.getenv("ENABLE_REMINDERS", "true").lower() == "true"
     
     DEFAULT_EMAIL_SCAN_TYPE = os.getenv("DEFAULT_EMAIL_SCAN_TYPE", "bills")

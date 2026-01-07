@@ -1,6 +1,4 @@
 from typing import Dict, List
-from datetime import datetime, timedelta
-
 
 class EmailScanConfig:
     
