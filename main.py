@@ -1,0 +1,339 @@
+import sys
+import os
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+from src.agent.graph import BillTrackerAgent, create_agent
+from src.config.settings import settings
+from src.config.email_scan_config import config as email_config
+from datetime import datetime
+import argparse
+
+
+def print_banner():
+    banner = """
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                                                               ║
+    ║              📋 BILL TRACKER AGENT 🤖                         ║
+    ║                                                               ║
+    ║         Intelligent Bill Management with AI                   ║
+    ║                                                               ║
+    ╚═══════════════════════════════════════════════════════════════╝
+    """
+    print(banner)
+
+
+def validate_configuration():
+    print("\n🔍 Validating configuration...")
+    
+    is_valid, errors = settings.validate()
+    
+    if not is_valid:
+        print("\n❌ Configuration validation failed:")
+        for error in errors:
+            print(f"   - {error}")
+        print("\n💡 Please check your .env file and ensure all required settings are configured.")
+        return False
+    
+    print("✅ Configuration validated successfully!")
+    print("\n" + settings.get_config_summary())
+    return True
+
+
+def interactive_mode(scan_type=None, scan_days=None):
+    print_banner()
+    
+    if not validate_configuration():
+        return
+    
+    print("\n🚀 Starting interactive mode...")
+    
+    if scan_type:
+        print(f"📧 Default scan type: {scan_type}")
+    if scan_days:
+        print(f"📅 Default scan days: {scan_days}")
+    
+    print("💡 Type 'help' for available commands, 'exit' to quit\n")
+    
+    try:
+        agent = create_agent()
+    except Exception as e:
+        print(f"\n❌ Failed to initialize agent: {e}")
+        return
+    
+    history = []
+    
+    while True:
+        try:
+            user_input = input("\n💬 You: ").strip()
+            
+            if not user_input:
+                continue
+            
+            if user_input.lower() in ['exit', 'quit', 'q']:
+                print("\n👋 Goodbye! Have a great day!")
+                break
+            
+            elif user_input.lower() == 'help':
+                print_help()
+                continue
+            
+            elif user_input.lower() == 'types':
+                print(email_config.get_config_summary())
+                continue
+            
+            elif user_input.lower() == 'history':
+                print_history(history)
+                continue
+            
+            elif user_input.lower() == 'clear':
+                os.system('clear' if os.name == 'posix' else 'cls')
+                print_banner()
+                continue
+            
+            elif user_input.lower() == 'config':
+                print("\n" + settings.get_config_summary())
+                continue
+            
+            history.append({
+                "timestamp": datetime.now().isoformat(),
+                "query": user_input
+            })
+            
+            enriched_query = user_input
+            if scan_type and "scan" in user_input.lower():
+                enriched_query += f" [type:{scan_type}]"
+            if scan_days and "scan" in user_input.lower():
+                enriched_query += f" [days:{scan_days}]"
+            
+            result = agent.invoke(enriched_query, verbose=True)
+            
+            print(f"\n🤖 Agent: {result['response']}")
+            
+            if result.get('metadata'):
+                meta = result['metadata']
+                if meta.get('saved_bills', 0) > 0:
+                    print(f"\n💾 Saved {meta['saved_bills']} bills")
+                if meta.get('reminders_created', 0) > 0:
+                    print(f"⏰ Created {meta['reminders_created']} reminders")
+            
+            if result.get('errors'):
+                print(f"\n⚠️  Warnings/Errors:")
+                for error in result['errors'][:3]:
+                    print(f"   - {error}")
+        
+        except KeyboardInterrupt:
+            print("\n\n⚠️  Interrupted. Type 'exit' to quit or continue chatting.")
+            continue
+        
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+            continue
+
+
+def single_query_mode(query: str, user_id: str = "default", scan_type=None, scan_days=None):
+    print_banner()
+    
+    if not validate_configuration():
+        return
+    
+    if scan_type:
+        query += f" [type:{scan_type}]"
+    if scan_days:
+        query += f" [days:{scan_days}]"
+    
+    print(f"\n📝 Query: {query}\n")
+    
+    try:
+        agent = create_agent()
+        result = agent.invoke(query, user_id=user_id, verbose=True)
+        
+        print(f"\n🤖 Response:")
+        print(result['response'])
+        
+        return result
+    
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        return None
+
+
+def batch_mode(queries_file: str, scan_type=None, scan_days=None):
+    print_banner()
+    
+    if not validate_configuration():
+        return
+    
+    print(f"\n📂 Loading queries from: {queries_file}\n")
+    
+    try:
+        with open(queries_file, 'r') as f:
+            queries = [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        print(f"❌ File not found: {queries_file}")
+        return
+    
+    print(f"📋 Found {len(queries)} queries\n")
+    
+    agent = create_agent()
+    results = []
+    
+    for i, query in enumerate(queries, 1):
+        print(f"\n{'='*70}")
+        print(f"Query {i}/{len(queries)}: {query}")
+        print(f"{'='*70}")
+        
+        enriched_query = query
+        if scan_type:
+            enriched_query += f" [type:{scan_type}]"
+        if scan_days:
+            enriched_query += f" [days:{scan_days}]"
+        
+        result = agent.invoke(enriched_query, verbose=True)
+        results.append(result)
+        
+        print(f"\n🤖 Response: {result['response']}\n")
+    
+    print(f"\n{'='*70}")
+    print("BATCH EXECUTION SUMMARY")
+    print(f"{'='*70}")
+    print(f"Total Queries: {len(results)}")
+    print(f"Successful: {sum(1 for r in results if r['success'])}")
+    print(f"Failed: {sum(1 for r in results if not r['success'])}")
+    print(f"Average Time: {sum(r['execution_time'] for r in results) / len(results):.2f}s")
+    print(f"{'='*70}\n")
+
+
+def print_help():
+    help_text = """
+    📚 Available Commands:
+    
+    💬 Chat Commands:
+       - Just type your question naturally!
+       - Examples:
+         * "Show me all my upcoming bills"
+         * "Scan my email for new bills"
+         * "Scan for promotions from last week"
+         * "Find university emails from last 3 months"
+         * "What did I spend on utilities last month?"
+    
+    🛠️ System Commands:
+       help      - Show this help message
+       types     - Show all available email scan types
+       history   - Show query history
+       config    - Show current configuration
+       clear     - Clear screen
+       exit/quit - Exit the application
+    
+    📧 Email Scan Types:
+       bills, promotions, discounts, orders, shipping,
+       receipts, subscriptions, universities, tax,
+       travel, insurance, banking
+    
+    💡 Tips:
+       - Be specific in your queries for better results
+       - You can ask follow-up questions
+       - Use natural language for date ranges
+    """
+    print(help_text)
+
+
+def print_history(history):
+    if not history:
+        print("\n📝 No history yet!")
+        return
+    
+    print(f"\n📚 Query History ({len(history)} queries):\n")
+    for i, item in enumerate(history[-10:], 1):
+        print(f"{i}. [{item['timestamp']}] {item['query']}")
+
+
+def list_email_types():
+    print_banner()
+    print(email_config.get_config_summary())
+    print("\n💡 Use with: python main.py --scan-type <type> --query \"scan my email\"")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Bill Tracker Agent - Intelligent Bill Management",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py
+  python main.py --query "scan my email for bills"
+  python main.py --scan-type promotions --days 7 --query "scan my email"
+  python main.py --scan-type universities --days 90
+  python main.py --batch queries.txt --scan-type orders
+        """
+    )
+    
+    parser.add_argument(
+        "-q", "--query",
+        type=str,
+        help="Run a single query and exit"
+    )
+    
+    parser.add_argument(
+        "-b", "--batch",
+        type=str,
+        help="Run queries from a file (one per line)"
+    )
+    
+    parser.add_argument(
+        "-u", "--user",
+        type=str,
+        default="default",
+        help="User ID for personalization"
+    )
+    
+    parser.add_argument(
+        "-t", "--scan-type",
+        type=str,
+        choices=email_config.get_all_types(),
+        help="Email scan type (bills, promotions, orders, etc.)"
+    )
+    
+    parser.add_argument(
+        "-d", "--days",
+        type=int,
+        help="Number of days to scan back"
+    )
+    
+    parser.add_argument(
+        "--list-types",
+        action="store_true",
+        help="List all available email scan types"
+    )
+    
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Validate configuration and exit"
+    )
+    
+    args = parser.parse_args()
+    
+    if args.list_types:
+        list_email_types()
+        return
+    
+    if args.validate:
+        print_banner()
+        validate_configuration()
+        return
+    
+    if args.query:
+        single_query_mode(args.query, args.user, args.scan_type, args.days)
+        return
+    
+    if args.batch:
+        batch_mode(args.batch, args.scan_type, args.days)
+        return
+    
+    interactive_mode(args.scan_type, args.days)
+
+
+if __name__ == "__main__":
+    main()
