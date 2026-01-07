@@ -40,6 +40,7 @@ data/processed/*
 
 data/vector_store/*.sqlite
 data/vector_store/*.db
+data/vector_store/*
 bills.db
 
 !data/raw/.gitkeep
