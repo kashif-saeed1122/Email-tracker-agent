@@ -102,7 +102,7 @@ python main.py --scan-type tax --days 365
 
 1. **Scanner Node**: Connects to Gmail, filters emails based on intent (Bill vs Promo), and downloads PDFs.
 2. **PDF Processor**: Extracts raw text and tables from documents.
-3. **Data Extractor**: Uses Gemini 1.5 to convert raw text into structured JSON (Vendor, Amount, Due Date).
+3. **Data Extractor**: Uses Gemini 2.5 flash to convert raw text into structured JSON (Vendor, Amount, Due Date).
 4. **RAG System**: Saves the data into ChromaDB using Voyage AI embeddings.
 5. **Planner**: The agent decides which tools to use based on your request.
 
@@ -114,9 +114,3 @@ This is an open-source project! Feel free to:
 2. Add new tools in `src/agent/tools.py`.
 3. Improve the prompts in `src/modules/llm_interface.py`.
 4. Submit a Pull Request.
-
-## License
-
-MIT
-
-```
