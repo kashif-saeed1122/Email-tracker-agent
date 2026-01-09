@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.agent.graph import BillTrackerAgent, create_agent
-from src.config.settings import settings
+from src.config.settings import settings, Settings
 from src.config.email_scan_config import config as email_config
 from datetime import datetime
 import argparse
@@ -24,16 +24,71 @@ def print_banner():
     print(banner)
 
 
-def validate_configuration():
+def setup_configuration():
+    """
+    Interactive configuration setup wizard
+    """
+    print_banner()
+    print("\n🔧 Configuration Setup Wizard")
+    print("="*70)
+    
+    print("\nThis will help you configure the Bill Tracker Agent.")
+    print("You can set API keys and customize default settings.\n")
+    
+    # Check for existing config
+    print("📁 Checking existing configuration...")
+    
+    config_file = Path(__file__).parent / "config.yaml"
+    env_file = Path(__file__).parent / ".env"
+    
+    print(f"   config.yaml: {'✅ Found' if config_file.exists() else '❌ Not found'}")
+    print(f"   .env file: {'✅ Found' if env_file.exists() else '❌ Not found'}")
+    
+    # API Key setup
+    print("\n🔑 API Key Setup")
+    print("-"*70)
+    
+    # OpenAI
+    openai_key = Settings.get_openai_api_key()
+    if openai_key:
+        print(f"✅ OPENAI_API_KEY: Configured (****{openai_key[-4:]})")
+    else:
+        print("⚠️  OPENAI_API_KEY: Not configured")
+        Settings.get_openai_api_key(interactive=True)
+    
+    # Voyage
+    voyage_key = Settings.get_voyage_api_key()
+    if voyage_key:
+        print(f"✅ VOYAGE_API_KEY: Configured (****{voyage_key[-4:]})")
+    else:
+        print("⚠️  VOYAGE_API_KEY: Not configured")
+        Settings.get_voyage_api_key(interactive=True)
+    
+    print("\n✅ Configuration setup complete!")
+    print("\n💡 You can now run the agent with: python main.py")
+    print("💡 Or start interactive mode: python main.py (no arguments)\n")
+
+
+def validate_configuration(interactive: bool = False):
+    """
+    Validate configuration with optional interactive prompts
+    """
     print("\n🔍 Validating configuration...")
     
-    is_valid, errors = settings.validate()
+    is_valid, errors = settings.validate(interactive=interactive)
     
     if not is_valid:
         print("\n❌ Configuration validation failed:")
         for error in errors:
             print(f"   - {error}")
-        print("\n💡 Please check your .env file and ensure all required settings are configured.")
+        
+        if not interactive:
+            print("\n💡 Options:")
+            print("   1. Run setup wizard: python main.py --setup")
+            print("   2. Set keys in .env file")
+            print("   3. Set keys in config.yaml")
+            print("   4. Pass --interactive flag to enter keys now")
+        
         return False
     
     print("✅ Configuration validated successfully!")
@@ -44,7 +99,9 @@ def validate_configuration():
 def interactive_mode(scan_type=None, scan_days=None):
     print_banner()
     
-    if not validate_configuration():
+    # Validate with interactive prompts if needed
+    if not validate_configuration(interactive=True):
+        print("\n❌ Cannot start without valid configuration.")
         return
     
     print("\n🚀 Starting interactive mode...")
@@ -53,6 +110,8 @@ def interactive_mode(scan_type=None, scan_days=None):
         print(f"📧 Default scan type: {scan_type}")
     if scan_days:
         print(f"📅 Default scan days: {scan_days}")
+    else:
+        print(f"📅 Default scan days: {settings.DEFAULT_DAYS_BACK}")
     
     print("💡 Type 'help' for available commands, 'exit' to quit\n")
     
@@ -96,6 +155,10 @@ def interactive_mode(scan_type=None, scan_days=None):
                 print("\n" + settings.get_config_summary())
                 continue
             
+            elif user_input.lower() == 'setup':
+                setup_configuration()
+                continue
+            
             history.append({
                 "timestamp": datetime.now().isoformat(),
                 "query": user_input
@@ -104,8 +167,13 @@ def interactive_mode(scan_type=None, scan_days=None):
             enriched_query = user_input
             if scan_type and "scan" in user_input.lower():
                 enriched_query += f" [type:{scan_type}]"
-            if scan_days and "scan" in user_input.lower():
-                enriched_query += f" [days:{scan_days}]"
+            
+            # Use configured default days if not specified
+            if scan_days:
+                if "scan" in user_input.lower():
+                    enriched_query += f" [days:{scan_days}]"
+            elif "scan" in user_input.lower() and "days" not in user_input.lower():
+                enriched_query += f" [days:{settings.DEFAULT_DAYS_BACK}]"
             
             result = agent.invoke(enriched_query, verbose=True)
             
@@ -142,6 +210,8 @@ def single_query_mode(query: str, user_id: str = "default", scan_type=None, scan
         query += f" [type:{scan_type}]"
     if scan_days:
         query += f" [days:{scan_days}]"
+    elif "scan" in query.lower():
+        query += f" [days:{settings.DEFAULT_DAYS_BACK}]"
     
     print(f"\n📝 Query: {query}\n")
     
@@ -189,6 +259,8 @@ def batch_mode(queries_file: str, scan_type=None, scan_days=None):
             enriched_query += f" [type:{scan_type}]"
         if scan_days:
             enriched_query += f" [days:{scan_days}]"
+        elif "scan" in query.lower():
+            enriched_query += f" [days:{settings.DEFAULT_DAYS_BACK}]"
         
         result = agent.invoke(enriched_query, verbose=True)
         results.append(result)
@@ -223,6 +295,7 @@ def print_help():
        types     - Show all available email scan types
        history   - Show query history
        config    - Show current configuration
+       setup     - Run configuration setup wizard
        clear     - Clear screen
        exit/quit - Exit the application
     
@@ -235,7 +308,8 @@ def print_help():
        - Be specific in your queries for better results
        - You can ask follow-up questions
        - Use natural language for date ranges
-    """
+       - Default scan period: {days} days (configurable in config.yaml)
+    """.format(days=settings.DEFAULT_DAYS_BACK)
     print(help_text)
 
 
@@ -255,6 +329,31 @@ def list_email_types():
     print("\n💡 Use with: python main.py --scan-type <type> --query \"scan my email\"")
 
 
+def show_config_info():
+    """Show configuration file locations and status"""
+    print_banner()
+    print("\n📋 Configuration Information")
+    print("="*70)
+    
+    config_file = Path(__file__).parent / "config.yaml"
+    env_file = Path(__file__).parent / ".env"
+    
+    print("\n📁 Configuration Files:")
+    print(f"   config.yaml: {config_file}")
+    print(f"   Status: {'✅ Found' if config_file.exists() else '❌ Not found'}")
+    print(f"\n   .env file: {env_file}")
+    print(f"   Status: {'✅ Found' if env_file.exists() else '❌ Not found'}")
+    
+    print("\n⚙️  Configuration Priority:")
+    print("   1. Session keys (set during runtime)")
+    print("   2. .env file (recommended for security)")
+    print("   3. config.yaml (convenient but less secure)")
+    
+    print("\n" + settings.get_config_summary())
+    
+    print("\n💡 To setup configuration: python main.py --setup")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Bill Tracker Agent - Intelligent Bill Management",
@@ -262,10 +361,12 @@ def main():
         epilog="""
 Examples:
   python main.py
+  python main.py --setup
   python main.py --query "scan my email for bills"
   python main.py --scan-type promotions --days 7 --query "scan my email"
   python main.py --scan-type universities --days 90
   python main.py --batch queries.txt --scan-type orders
+  python main.py --show-config
         """
     )
     
@@ -298,7 +399,7 @@ Examples:
     parser.add_argument(
         "-d", "--days",
         type=int,
-        help="Number of days to scan back"
+        help=f"Number of days to scan back (default: from config.yaml)"
     )
     
     parser.add_argument(
@@ -308,12 +409,39 @@ Examples:
     )
     
     parser.add_argument(
+        "--setup",
+        action="store_true",
+        help="Run interactive configuration setup wizard"
+    )
+    
+    parser.add_argument(
+        "--show-config",
+        action="store_true",
+        help="Show configuration file locations and current settings"
+    )
+    
+    parser.add_argument(
         "--validate",
         action="store_true",
         help="Validate configuration and exit"
     )
     
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Enable interactive API key prompts during validation"
+    )
+    
     args = parser.parse_args()
+    
+    # Handle special commands first
+    if args.setup:
+        setup_configuration()
+        return
+    
+    if args.show_config:
+        show_config_info()
+        return
     
     if args.list_types:
         list_email_types()
@@ -321,9 +449,10 @@ Examples:
     
     if args.validate:
         print_banner()
-        validate_configuration()
+        validate_configuration(interactive=args.interactive)
         return
     
+    # Normal execution modes
     if args.query:
         single_query_mode(args.query, args.user, args.scan_type, args.days)
         return
@@ -332,6 +461,7 @@ Examples:
         batch_mode(args.batch, args.scan_type, args.days)
         return
     
+    # Default: Interactive mode
     interactive_mode(args.scan_type, args.days)
 
 

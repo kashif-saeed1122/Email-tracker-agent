@@ -1,0 +1,55 @@
+llm:
+  provider: "openai"  
+  model: "gpt-4.1-nano"
+  temperature: 0.1
+  max_tokens: 2000
+
+embeddings:
+  provider: "voyage"
+  model: "voyage-3-lite"
+
+scanning:
+  default_days_back: 10
+  date_format: "YYYY-MM-DD"
+  default_date_from: "auto"
+  default_date_to: "today"
+  max_results: 50
+
+api_keys:
+  openai_api_key: ""
+  voyage_api_key: ""
+
+credentials:
+  email_address: ""
+  email_password: ""
+
+email:
+  gmail_credentials_path: "credentials.json"
+  
+  gmail_token_path: "token.json"
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587  
+  default_scan_type: "general"
+
+storage:
+  base_dir: "./data"
+  
+  # Subdirectories
+  raw_data: "raw"
+  processed_data: "processed"
+  vector_store: "vector_store"
+
+features:
+  enable_email_scanning: true
+  enable_rag: true
+  enable_reminders: true  
+  enable_web_search: true
+
+advanced:
+  max_retries: 3
+  retry_delay_seconds: 2
+  
+  verbose_mode: false
+  
+  enable_file_logging: false
+  log_file_path: "./logs/agent.log"
