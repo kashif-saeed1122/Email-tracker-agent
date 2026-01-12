@@ -350,7 +350,79 @@ class Settings:
     @property
     def ENABLE_REMINDERS(self) -> bool:
         return bool(self._get_config_value("features", "enable_reminders", default=True))
-    
+
+    # ==================== Notification Configuration ====================
+
+    @property
+    def NOTIFICATION_CHANNEL(self) -> str:
+        """Default notification channel: email, telegram, whatsapp, or console"""
+        env_value = os.getenv("NOTIFICATION_CHANNEL", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "default_channel", default="email")
+
+    @property
+    def REMINDER_CHECK_INTERVAL(self) -> int:
+        """Interval in seconds between reminder checks (default: 300 = 5 min)"""
+        env_value = os.getenv("REMINDER_CHECK_INTERVAL", "")
+        if env_value:
+            return int(env_value)
+        return int(self._get_config_value("notifications", "check_interval", default=300))
+
+    @property
+    def DEFAULT_REMINDER_DAYS(self) -> list:
+        """Default days before due date to send reminders"""
+        return self._get_config_value("notifications", "reminder_days", default=[3, 1, 0])
+
+    @property
+    def REMINDER_DB_PATH(self) -> str:
+        """Path to reminder SQLite database"""
+        return str(self.DATA_DIR / "reminders.db")
+
+    # Telegram Configuration
+    @property
+    def TELEGRAM_BOT_TOKEN(self) -> str:
+        env_value = os.getenv("TELEGRAM_BOT_TOKEN", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "telegram", "bot_token", default="")
+
+    @property
+    def TELEGRAM_CHAT_ID(self) -> str:
+        env_value = os.getenv("TELEGRAM_CHAT_ID", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "telegram", "chat_id", default="")
+
+    # Twilio/WhatsApp Configuration
+    @property
+    def TWILIO_ACCOUNT_SID(self) -> str:
+        env_value = os.getenv("TWILIO_ACCOUNT_SID", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "twilio", "account_sid", default="")
+
+    @property
+    def TWILIO_AUTH_TOKEN(self) -> str:
+        env_value = os.getenv("TWILIO_AUTH_TOKEN", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "twilio", "auth_token", default="")
+
+    @property
+    def TWILIO_WHATSAPP_FROM(self) -> str:
+        env_value = os.getenv("TWILIO_WHATSAPP_FROM", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "twilio", "whatsapp_from", default="")
+
+    @property
+    def TWILIO_WHATSAPP_TO(self) -> str:
+        env_value = os.getenv("TWILIO_WHATSAPP_TO", "")
+        if env_value:
+            return env_value
+        return self._get_config_value("notifications", "twilio", "whatsapp_to", default="")
+
     # ==================== Validation ====================
     
     @classmethod
@@ -395,8 +467,14 @@ class Settings:
         summary += f"    Email Scanning: {'✅' if instance.ENABLE_EMAIL_SCANNING else '❌'}\n"
         summary += f"    RAG Search: {'✅' if instance.ENABLE_RAG else '❌'}\n"
         summary += f"    Reminders: {'✅' if instance.ENABLE_REMINDERS else '❌'}\n"
+        summary += "="*60 + "\n"
+        summary += "  Notifications:\n"
+        summary += f"    Default Channel: {instance.NOTIFICATION_CHANNEL}\n"
+        summary += f"    Check Interval: {instance.REMINDER_CHECK_INTERVAL}s\n"
+        summary += f"    Telegram: {'✅ Configured' if instance.TELEGRAM_BOT_TOKEN else '❌ Not configured'}\n"
+        summary += f"    WhatsApp: {'✅ Configured' if instance.TWILIO_ACCOUNT_SID else '❌ Not configured'}\n"
         summary += "="*60
-        
+
         return summary
 
 

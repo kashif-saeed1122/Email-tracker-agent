@@ -15,13 +15,15 @@ def scan_emails(
     user_email: Optional[str] = None,
     max_results: int = 50,
     require_attachments: bool = True,
-    use_filtering: bool = True
+    use_filtering: bool = True,
+    inbox_category: str = "primary",
+    days: int = None
 ) -> Dict[str, Any]:
     """
     Scans the user's Gmail inbox for emails matching specific criteria using intelligent LLM-based relevance filtering.
 
-    The LLM FULLY READS each email (sender, subject, body) to determine relevance.
-    No keyword pre-filtering at Gmail level - fetches all emails in date range then applies AI comprehension.
+    Now targets specific inbox categories (primary, promotions, social, etc.) for more accurate results.
+    Uses newer_than for short timeframes (<=30 days) for better reliability.
 
     Args:
         date_from (str): Start date for the search in 'YYYY-MM-DD' format.
@@ -31,6 +33,8 @@ def scan_emails(
         max_results (int): Maximum number of emails to retrieve (default: 50).
         require_attachments (bool): If True, only returns emails that have files attached.
         use_filtering (bool): If True, applies LLM-based content relevance checks.
+        inbox_category (str): Which inbox category to search - 'primary', 'promotions', 'social', 'updates', 'forums', or 'all'.
+        days (int): Number of days to look back. If <=30, uses Gmail's newer_than for reliability.
 
     Returns:
         Dict: A dictionary containing 'success' status, counts, 'filtered_log' with reasons for filtered emails,
@@ -43,7 +47,9 @@ def scan_emails(
         user_email=user_email,
         max_results=max_results,
         require_attachments=require_attachments,
-        use_filtering=use_filtering
+        use_filtering=use_filtering,
+        inbox_category=inbox_category,
+        days=days
     )
 
 
