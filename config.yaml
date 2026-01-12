@@ -53,3 +53,16 @@ advanced:
   
   enable_file_logging: false
   log_file_path: "./logs/agent.log"
+
+notifications:
+  default_channel: whatsapp  # or telegram, whatsapp, console
+  check_interval: 300     # 5 minutes
+  reminder_days: [3, 1, 0]
+  telegram:
+    bot_token: "your-bot-token"
+    chat_id: "your-chat-id"
+  twilio:
+    account_sid: ""
+    auth_token: ""
+    whatsapp_from: ""
+    whatsapp_to: ""
