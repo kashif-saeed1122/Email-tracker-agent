@@ -7,8 +7,77 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.agent.graph import BillTrackerAgent, create_agent
 from src.config.settings import settings, Settings
 from src.config.email_scan_config import config as email_config
+from src.modules.reminder_scheduler import ReminderScheduler
+from src.modules.reminder_storage import ReminderStorage
+from src.modules.reminder_system import ReminderSystem
 from datetime import datetime
 import argparse
+import atexit
+
+# Global scheduler instance
+_scheduler: ReminderScheduler = None
+
+
+def start_reminder_scheduler():
+    """Initialize and start the background reminder scheduler"""
+    global _scheduler
+
+    if not settings.ENABLE_REMINDERS:
+        print("   Reminders disabled in config")
+        return None
+
+    try:
+        # Initialize storage
+        storage = ReminderStorage(db_path=settings.REMINDER_DB_PATH)
+
+        # Initialize sender with configured credentials
+        sender = ReminderSystem(
+            email_address=settings.EMAIL_ADDRESS,
+            email_password=settings.EMAIL_PASSWORD,
+            smtp_server=settings.SMTP_SERVER,
+            smtp_port=settings.SMTP_PORT,
+            telegram_bot_token=settings.TELEGRAM_BOT_TOKEN,
+            telegram_chat_id=settings.TELEGRAM_CHAT_ID,
+            twilio_account_sid=settings.TWILIO_ACCOUNT_SID,
+            twilio_auth_token=settings.TWILIO_AUTH_TOKEN,
+            twilio_whatsapp_from=settings.TWILIO_WHATSAPP_FROM,
+            twilio_whatsapp_to=settings.TWILIO_WHATSAPP_TO
+        )
+
+        # Create scheduler
+        _scheduler = ReminderScheduler(
+            storage=storage,
+            sender=sender,
+            check_interval=settings.REMINDER_CHECK_INTERVAL
+        )
+
+        # Start background thread
+        _scheduler.start()
+
+        # Register cleanup on exit
+        atexit.register(stop_reminder_scheduler)
+
+        return _scheduler
+
+    except Exception as e:
+        print(f"   Failed to start scheduler: {e}")
+        return None
+
+
+def stop_reminder_scheduler():
+    """Stop the reminder scheduler gracefully"""
+    global _scheduler
+    if _scheduler:
+        _scheduler.stop()
+        _scheduler = None
+
+
+def get_scheduler_status() -> dict:
+    """Get current scheduler status"""
+    global _scheduler
+    if _scheduler:
+        return _scheduler.get_status()
+    return {"running": False, "message": "Scheduler not initialized"}
 
 
 def print_banner():
@@ -98,31 +167,39 @@ def validate_configuration(interactive: bool = False):
 
 def interactive_mode(scan_type=None, scan_days=None):
     print_banner()
-    
+
     # Validate with interactive prompts if needed
     if not validate_configuration(interactive=True):
         print("\n❌ Cannot start without valid configuration.")
         return
-    
+
     print("\n🚀 Starting interactive mode...")
-    
+
     if scan_type:
         print(f"📧 Default scan type: {scan_type}")
     if scan_days:
         print(f"📅 Default scan days: {scan_days}")
     else:
         print(f"📅 Default scan days: {settings.DEFAULT_DAYS_BACK}")
-    
-    print("💡 Type 'help' for available commands, 'exit' to quit\n")
-    
+
+    # Start the reminder scheduler
+    print("\n⏰ Starting reminder scheduler...")
+    scheduler = start_reminder_scheduler()
+    if scheduler:
+        print(f"   Scheduler running (checking every {settings.REMINDER_CHECK_INTERVAL}s)")
+    else:
+        print("   Scheduler not started (check configuration)")
+
+    print("\n💡 Type 'help' for available commands, 'exit' to quit\n")
+
     try:
         agent = create_agent()
     except Exception as e:
         print(f"\n❌ Failed to initialize agent: {e}")
         return
-    
+
     history = []
-    
+
     while True:
         try:
             user_input = input("\n💬 You: ").strip()
@@ -158,7 +235,35 @@ def interactive_mode(scan_type=None, scan_days=None):
             elif user_input.lower() == 'setup':
                 setup_configuration()
                 continue
-            
+
+            elif user_input.lower() == 'reminders':
+                status = get_scheduler_status()
+                print(f"\n⏰ Reminder Scheduler Status:")
+                print(f"   Running: {'✅ Yes' if status.get('running') else '❌ No'}")
+                if status.get('stats'):
+                    stats = status['stats']
+                    print(f"   Pending: {stats.get('pending', 0)}")
+                    print(f"   Sent: {stats.get('sent', 0)}")
+                    print(f"   Failed: {stats.get('failed', 0)}")
+                if status.get('upcoming_24h', 0) > 0:
+                    print(f"   Upcoming (24h): {status['upcoming_24h']}")
+                    if status.get('next_reminders'):
+                        print(f"   Next reminders:")
+                        for rem in status['next_reminders'][:3]:
+                            print(f"      - {rem.get('vendor', 'Unknown')}: {rem.get('reminder_date', 'N/A')}")
+                continue
+
+            elif user_input.lower() == 'check-reminders':
+                if _scheduler:
+                    print("\n⏰ Manually checking reminders...")
+                    result = _scheduler.check_now()
+                    print(f"   Checked: {result.get('checked', 0)}")
+                    print(f"   Sent: {result.get('sent', 0)}")
+                    print(f"   Failed: {result.get('failed', 0)}")
+                else:
+                    print("\n❌ Scheduler not running")
+                continue
+
             history.append({
                 "timestamp": datetime.now().isoformat(),
                 "query": user_input
@@ -291,13 +396,15 @@ def print_help():
          * "What did I spend on utilities last month?"
     
     🛠️ System Commands:
-       help      - Show this help message
-       types     - Show all available email scan types
-       history   - Show query history
-       config    - Show current configuration
-       setup     - Run configuration setup wizard
-       clear     - Clear screen
-       exit/quit - Exit the application
+       help            - Show this help message
+       types           - Show all available email scan types
+       history         - Show query history
+       config          - Show current configuration
+       setup           - Run configuration setup wizard
+       reminders       - Show reminder scheduler status
+       check-reminders - Manually trigger reminder check
+       clear           - Clear screen
+       exit/quit       - Exit the application
     
     📧 Email Scan Types:
        bills, promotions, discounts, orders, shipping,

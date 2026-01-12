@@ -99,7 +99,7 @@ class LLMInterface:
     def _get_model_for_type(self, extraction_type: str) -> Type[BaseModel]:
         return self.extraction_registry.get(extraction_type.lower(), GeneralData)
         
-    def extract_data(self, text: str, extraction_type: str = "bills") -> Dict:
+    def extract_data(self, text: str, extraction_type: str) -> Dict:
         pydantic_model = self._get_model_for_type(extraction_type)
         parser = PydanticOutputParser(pydantic_object=pydantic_model)
         
