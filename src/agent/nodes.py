@@ -294,7 +294,6 @@ def rag_retriever_node(state: AgentState) -> AgentState:
     print(f"   Query: {state['user_query']}")
     
     try:
-        # Search with higher top_k to get more results
         res = rag_search.invoke({"query": state["user_query"], "top_k": 10})
         
         if res.get("success"):
@@ -314,7 +313,6 @@ def rag_retriever_node(state: AgentState) -> AgentState:
             state["retrieved_documents"] = cleaned_results
             print(f"   ✅ Found {len(cleaned_results)} relevant documents")
             
-            # Log what was found
             for i, doc in enumerate(cleaned_results[:3], 1):
                 metadata = doc.get("metadata", {})
                 if metadata.get("type") == "email":

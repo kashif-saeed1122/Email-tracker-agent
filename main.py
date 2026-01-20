@@ -168,13 +168,9 @@ def validate_configuration(interactive: bool = False):
 def interactive_mode(scan_type=None, scan_days=None):
     print_banner()
 
-    # Validate with interactive prompts if needed
     if not validate_configuration(interactive=True):
         print("\n❌ Cannot start without valid configuration.")
         return
-
-    print("\n🚀 Starting interactive mode...")
-
     if scan_type:
         print(f"📧 Default scan type: {scan_type}")
     if scan_days:
@@ -182,7 +178,6 @@ def interactive_mode(scan_type=None, scan_days=None):
     else:
         print(f"📅 Default scan days: {settings.DEFAULT_DAYS_BACK}")
 
-    # Start the reminder scheduler
     print("\n⏰ Starting reminder scheduler...")
     scheduler = start_reminder_scheduler()
     if scheduler:
@@ -273,7 +268,6 @@ def interactive_mode(scan_type=None, scan_days=None):
             if scan_type and "scan" in user_input.lower():
                 enriched_query += f" [type:{scan_type}]"
             
-            # Use configured default days if not specified
             if scan_days:
                 if "scan" in user_input.lower():
                     enriched_query += f" [days:{scan_days}]"

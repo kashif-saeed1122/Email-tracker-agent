@@ -1,8 +1,5 @@
 from langchain.tools import BaseTool, tool
-from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-import os
-import json
 from src.modules.email_scanner import scan_emails as _scan_emails_impl
 from src.config.settings import settings
 
@@ -38,7 +35,7 @@ def scan_emails(
 
     Returns:
         Dict: A dictionary containing 'success' status, counts, 'filtered_log' with reasons for filtered emails,
-              and a list of 'results' (emails with body, sender, and attachment paths).
+            and a list of 'results' (emails with body, sender, and attachment paths).
     """
     return _scan_emails_impl(
         date_from=date_from,
@@ -96,14 +93,14 @@ def extract_data(text: str, extraction_type: str = "bills") -> Dict[str, Any]:
     Args:
         text (str): The raw text content to analyze.
         extraction_type (str): The schema type to extract. Options:
-                               'bills' (for invoices), 
-                               'promotions' (for offers/discounts), 
-                               'orders' (for shopping receipts), 
-                               'general' (for summaries).
+                            'bills' (for invoices), 
+                            'promotions' (for offers/discounts), 
+                            'orders' (for shopping receipts), 
+                            'general' (for summaries).
 
     Returns:
         Dict: Contains 'success' status and an 'extracted_data' dictionary with fields 
-              matching the requested type.
+            matching the requested type.
     """
     from src.modules.llm_interface import LLMInterface
     
