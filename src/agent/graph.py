@@ -29,11 +29,7 @@ def build_graph() -> StateGraph:
     Returns:
         Compiled StateGraph ready for execution
     """
-    
-    # Initialize graph with state
     workflow = StateGraph(AgentState)
-    
-    # ==================== Add All Nodes ====================
     
     # Core nodes
     workflow.add_node("intent_classifier", intent_classifier_node)
@@ -58,11 +54,8 @@ def build_graph() -> StateGraph:
     workflow.add_node("web_searcher", web_searcher_node)
     workflow.add_node("reminder_creator", reminder_creator_node)
     
-    # ==================== Define Entry Point ====================
     workflow.set_entry_point("intent_classifier")
-    
-    # ==================== Add Conditional Edges ====================
-    
+        
     # After intent classification, route based on intent
     workflow.add_conditional_edges(
         "intent_classifier",
@@ -73,7 +66,6 @@ def build_graph() -> StateGraph:
         }
     )
     
-    # After planning, route to first step or response
     workflow.add_conditional_edges(
         "planner",
         route_after_plan,
@@ -90,10 +82,7 @@ def build_graph() -> StateGraph:
             "response_generator": "response_generator"
         }
     )
-    
-    # ==================== Comprehensive Conditional Edges ====================
-    # All mappings include ALL possible steps to prevent KeyErrors
-    
+        
     COMPREHENSIVE_STEP_MAPPING = {
         "email_scanner": "email_scanner",
         "pdf_processor": "pdf_processor",
@@ -109,7 +98,6 @@ def build_graph() -> StateGraph:
         "end": END
     }
     
-    # ==================== Email Scanning Workflow ====================
     workflow.add_conditional_edges(
         "email_scanner",
         should_continue,
@@ -122,7 +110,6 @@ def build_graph() -> StateGraph:
         COMPREHENSIVE_STEP_MAPPING
     )
     
-    # ==================== Data Processing Workflow ====================
     workflow.add_conditional_edges(
         "data_extractor",
         should_continue,
@@ -141,7 +128,6 @@ def build_graph() -> StateGraph:
         COMPREHENSIVE_STEP_MAPPING
     )
     
-    # ==================== Query Workflow ====================
     workflow.add_conditional_edges(
         "rag_retriever",
         should_continue,
@@ -166,19 +152,13 @@ def build_graph() -> StateGraph:
         COMPREHENSIVE_STEP_MAPPING
     )
     
-    # ==================== Terminal Nodes ====================
     workflow.add_edge("response_generator", END)
     workflow.add_edge("error_handler", END)
     
-    # Compile the graph
     return workflow.compile()
 
 
 class BillTrackerAgent:
-    """
-    Main Bill Tracker Agent interface.
-    Provides high-level API for interacting with the agent.
-    """
     
     def __init__(self):
         """Initialize the agent with compiled graph"""
@@ -263,15 +243,10 @@ class BillTrackerAgent:
             }
 
 
-# ==================== Convenience Functions ====================
-
 def create_agent() -> BillTrackerAgent:
     """Factory function to create a new agent instance."""
     return BillTrackerAgent()
 
-
-# ==================== Testing ====================
-# Move testing logic to check for __main__ to avoid running on import
 
 if __name__ == "__main__":
     def test_agent():

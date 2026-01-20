@@ -46,8 +46,8 @@ class WebSearchTool:
             self.search_wrapper.max_results = max_results
             
             # Perform search using LangChain tool
-            raw_results = self.search_tool.invoke(enhanced_query)
-            
+            raw_results = self.search_tool.run(enhanced_query)
+
             # Parse and format results
             results = self._parse_results(raw_results, query)
             
@@ -124,7 +124,7 @@ class WebSearchTool:
         }
         return enhancements.get(search_type, query)
     
-    def _parse_results(self, raw_results: str, query: str) -> List[Dict]:
+    def _parse_results(self, raw_results, query: str) -> List[Dict]:
         """
         Parse LangChain DuckDuckGo results
         
@@ -140,8 +140,11 @@ class WebSearchTool:
         # LangChain returns results as a string, parse it
         # Format is typically: [snippet: ..., title: ..., link: ...]
         try:
+            # Coerce to string in case wrapper returns list/dict
+            raw_text = raw_results if isinstance(raw_results, str) else str(raw_results)
+
             # Split by result separators
-            result_blocks = raw_results.split('[snippet:')
+            result_blocks = raw_text.split('[snippet:')
             
             for i, block in enumerate(result_blocks[1:], 1):  # Skip first empty element
                 try:
@@ -235,8 +238,8 @@ class WebSearchTool:
             news_query = f"{query} news"
             
             # Search using LangChain tool
-            raw_results = self.search_tool.invoke(news_query)
-            
+            raw_results = self.search_tool.run(news_query)
+
             # Parse results
             results = self._parse_results(raw_results, query)
             
