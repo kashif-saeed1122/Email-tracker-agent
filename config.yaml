@@ -62,7 +62,7 @@ notifications:
     bot_token: "your-bot-token"
     chat_id: "your-chat-id"
   twilio:
-    account_sid: "ACccc7db3228651af724981e7c76590230"
-    auth_token: "7629b772b3920254e0c01daa108bfc1c"
-    whatsapp_from: "whatsapp:+14155238886"
-    whatsapp_to: "whatsapp:+923341006177"
+    account_sid: ""
+    auth_token: ""
+    whatsapp_from: "whatsapp:+"
+    whatsapp_to: "whatsapp:+"
